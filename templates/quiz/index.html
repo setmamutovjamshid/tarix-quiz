@@ -366,6 +366,14 @@
       b.classList.add('cursor-not-allowed', 'opacity-90');
     });
 
+    // Tanlangan variantni darhol belgilash (0ms his etish)
+    selectedBtn.classList.remove('border-slate-200', 'dark:border-slate-700');
+    selectedBtn.classList.add('border-indigo-500', 'bg-indigo-50/60', 'dark:bg-indigo-950/40');
+    const selectedBadge = selectedBtn.querySelector('.letter-badge');
+    if (selectedBadge) {
+      selectedBadge.classList.add('border-indigo-500', 'text-indigo-600');
+    }
+
     const currentQ = questions[currentIndex];
 
     try {

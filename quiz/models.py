@@ -16,7 +16,7 @@ class Question(models.Model):
 
     class Meta:
         db_table = 'questions'
-        ordering = ['-id']
+        ordering = ['id']
         verbose_name = "Savol"
         verbose_name_plural = "Savollar"
 

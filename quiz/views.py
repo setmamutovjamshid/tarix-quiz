@@ -54,20 +54,41 @@ def quiz_questions_api(request):
     Tasodifiy savollarni qaytaradi.
     MUHIM: to'g'ri javob (correct) maydoni foydalanuvchiga YUBORILMAYDI!
     """
+    import random
+
     try:
         count = int(request.GET.get('count', 20))
-    except ValueError:
+    except (ValueError, TypeError):
         count = 20
 
     if count < 1:
         count = 1
-    total_in_db = Question.objects.count()
-    if count > total_in_db and total_in_db > 0:
+
+    all_ids = list(Question.objects.values_list('id', flat=True))
+    total_in_db = len(all_ids)
+
+    if not all_ids:
+        return JsonResponse({
+            'success': True,
+            'count': 0,
+            'questions': []
+        })
+
+    if count > total_in_db:
         count = total_in_db
 
-    # Tasodifiy tartibda savollarni olish (parameterized query)
-    questions_qs = Question.objects.order_by('?')[:count]
-    questions_data = [q.to_public_dict() for q in questions_qs]
+    selected_ids = random.sample(all_ids, count)
+
+    # Faqat kerakli maydonlarni tezkor olish (to'g'ri javobsiz)
+    questions_qs = Question.objects.filter(id__in=selected_ids).only(
+        'id', 'question', 'option_a', 'option_b', 'option_c', 'option_d'
+    )
+    questions_map = {q.id: q for q in questions_qs}
+    questions_data = [
+        questions_map[qid].to_public_dict()
+        for qid in selected_ids
+        if qid in questions_map
+    ]
 
     return JsonResponse({
         'success': True,
@@ -101,7 +122,9 @@ def check_answer_api(request):
         }, status=400)
 
     try:
-        question = Question.objects.get(id=question_id)
+        question = Question.objects.only(
+            'correct', 'option_a', 'option_b', 'option_c', 'option_d'
+        ).get(id=question_id)
     except Question.DoesNotExist:
         return JsonResponse({
             'success': False,
@@ -204,8 +227,14 @@ def admin_questions_list_api(request):
     Savollar ro'yxatini sahifalab (50 tadan) va qidiruv bilan qaytarish.
     Parametrlar: page=1, limit=50, search=""
     """
-    page_num = int(request.GET.get('page', 1))
-    limit = int(request.GET.get('limit', 50))
+    try:
+        page_num = int(request.GET.get('page', 1))
+    except (ValueError, TypeError):
+        page_num = 1
+    try:
+        limit = min(max(int(request.GET.get('limit', 50)), 1), 100)
+    except (ValueError, TypeError):
+        limit = 50
     search = request.GET.get('search', '').strip()
 
     qs = Question.objects.all()
@@ -219,18 +248,21 @@ def admin_questions_list_api(request):
             Q(option_d__icontains=search)
         )
 
-    qs = qs.order_by('-id')
-    total = qs.count()
-
+    qs = qs.order_by('id')
     paginator = Paginator(qs, limit)
     page_obj = paginator.get_page(page_num)
 
-    questions_data = [q.to_admin_dict() for q in page_obj]
+    start_number = (page_obj.number - 1) * limit
+    questions_data = []
+    for idx, q in enumerate(page_obj, start=start_number + 1):
+        item = q.to_admin_dict()
+        item['order_number'] = idx
+        questions_data.append(item)
 
     return JsonResponse({
         'success': True,
         'questions': questions_data,
-        'total': total,
+        'total': paginator.count,
         'page': page_obj.number,
         'totalPages': paginator.num_pages,
         'hasNext': page_obj.has_next(),

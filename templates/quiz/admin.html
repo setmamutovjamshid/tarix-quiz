@@ -146,7 +146,7 @@
         <table class="w-full text-left text-sm border-collapse">
           <thead>
             <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-xs uppercase font-extrabold text-slate-500 dark:text-slate-400">
-              <th class="py-3.5 px-4 w-16 text-center">ID</th>
+              <th class="py-3.5 px-4 w-16 text-center" title="Tartib raqami">T/r</th>
               <th class="py-3.5 px-4 min-w-[240px]">Savol Matni</th>
               <th class="py-3.5 px-4 min-w-[280px]">Variantlar (A / B / C / D)</th>
               <th class="py-3.5 px-4 w-32 text-center">Amallar</th>
@@ -320,6 +320,9 @@
     </div>
   </div>
 
+  <!-- Toast xabarnomalar konteyneri -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
 </div>
 {% endblock %}
 
@@ -372,10 +375,36 @@
   // Holat
   let currentPage = 1;
   let totalPages = 1;
+  let totalCount = 0;
   let searchQuery = '';
   let searchTimeout = null;
 
   const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+  // Tezkor Toast bildirishnoma ko'rsatish
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    const isError = (type === 'error');
+    toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm font-semibold transition-all duration-300 transform translate-y-3 opacity-0 ${
+      isError 
+        ? 'bg-rose-600 text-white' 
+        : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border border-slate-700 dark:border-slate-300'
+    }`;
+    toast.innerHTML = `
+      <span class="text-base">${isError ? '⚠️' : '✅'}</span>
+      <span>${escapeHtml(message)}</span>
+    `;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-3', 'opacity-0');
+    });
+    setTimeout(() => {
+      toast.classList.add('translate-y-3', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
 
   // Parolni ko'rsatish/yashirish
   togglePassBtn.addEventListener('click', () => {
@@ -449,13 +478,84 @@
     showLogin();
   });
 
+  // Jadval qatorini yasash (In-place & Optimistic UI uchun)
+  function buildQuestionRow(q, orderNum = null) {
+    const row = document.createElement('tr');
+    row.id = `question-row-${q.id}`;
+    row.dataset.id = q.id;
+    row.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors";
+
+    const displayNum = orderNum || q.order_number || '';
+
+    const optionsHtml = (q.options || []).map((opt, idx) => {
+      const isCorrect = (idx === q.correct);
+      return `
+        <div class="text-xs flex items-start gap-1.5 ${isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}">
+          <span class="font-bold">${OPTION_LETTERS[idx]}:</span>
+          <span>${escapeHtml(opt)}</span>
+          ${isCorrect ? '<span class="text-emerald-500 font-extrabold">✓</span>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    row.innerHTML = `
+      <td class="py-3 px-4 text-center font-bold text-xs text-indigo-600 dark:text-indigo-400 font-mono row-number">${displayNum}</td>
+      <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white leading-snug">
+        ${escapeHtml(q.question)}
+      </td>
+      <td class="py-3 px-4 space-y-0.5">
+        ${optionsHtml}
+      </td>
+      <td class="py-3 px-4 text-center">
+        <div class="inline-flex items-center gap-1.5">
+          <button 
+            type="button" 
+            class="edit-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition"
+            title="Tahrirlash"
+          >
+            ✏️
+          </button>
+          <button 
+            type="button" 
+            class="delete-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition"
+            title="O'chirish"
+          >
+            🗑️
+          </button>
+        </div>
+      </td>
+    `;
+
+    row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(q));
+    row.querySelector('.delete-btn').addEventListener('click', () => deleteSingleQuestion(q.id));
+
+    return row;
+  }
+
+  // Tartib raqamlarini avtomatik qayta raqamlash (Avtomatik T/r)
+  function updateRowNumbers() {
+    const rows = questionsTableBody.querySelectorAll('tr[data-id]');
+    const baseIndex = (currentPage - 1) * 50;
+    rows.forEach((row, idx) => {
+      const numCell = row.querySelector('.row-number');
+      if (numCell) {
+        numCell.textContent = baseIndex + idx + 1;
+      }
+    });
+  }
+
   // 4. Savollarni yuklash (50 tadan sahifalash)
   async function loadQuestions() {
-    questionsTableBody.innerHTML = `
-      <tr>
-        <td colspan="4" class="text-center py-10 text-slate-400">Yuklanmoqda...</td>
-      </tr>
-    `;
+    const hasExistingRows = questionsTableBody.children.length > 0 && !questionsTableBody.querySelector('td[colspan="4"]');
+    if (hasExistingRows) {
+      questionsTableBody.classList.add('opacity-40', 'pointer-events-none');
+    } else {
+      questionsTableBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-10 text-slate-400 font-medium">Yuklanmoqda...</td>
+        </tr>
+      `;
+    }
 
     try {
       const url = `/api/admin/questions/?page=${currentPage}&limit=50&search=${encodeURIComponent(searchQuery)}`;
@@ -467,19 +567,21 @@
           showLogin();
           return;
         }
-        alert(data.error || "Savollarni yuklashda xatolik");
+        showToast(data.error || "Savollarni yuklashda xatolik", "error");
         return;
       }
 
-      adminTotalBadge.textContent = `Jami: ${data.total} ta savol`;
+      totalCount = data.total || 0;
+      adminTotalBadge.textContent = `Jami: ${totalCount} ta savol`;
       totalPages = data.totalPages || 1;
       currentPage = data.page || 1;
       currentPageDisplay.textContent = `${currentPage} / ${totalPages}`;
-      paginationInfo.textContent = `Jami ${data.total} ta savol (${totalPages} ta sahifa)`;
+      paginationInfo.textContent = `Jami ${totalCount} ta savol (${totalPages} ta sahifa)`;
 
       prevPageBtn.disabled = !data.hasPrev;
       nextPageBtn.disabled = !data.hasNext;
 
+      questionsTableBody.innerHTML = '';
       if (!data.questions || data.questions.length === 0) {
         questionsTableBody.innerHTML = `
           <tr>
@@ -491,56 +593,11 @@
         return;
       }
 
-      questionsTableBody.innerHTML = '';
-      data.questions.forEach(q => {
-        const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors";
-
-        // Variantlar ro'yxati (to'g'ri variant yashil)
-        const optionsHtml = q.options.map((opt, idx) => {
-          const isCorrect = (idx === q.correct);
-          return `
-            <div class="text-xs flex items-start gap-1.5 ${isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}">
-              <span class="font-bold">${OPTION_LETTERS[idx]}:</span>
-              <span>${escapeHtml(opt)}</span>
-              ${isCorrect ? '<span class="text-emerald-500 font-extrabold">✓</span>' : ''}
-            </div>
-          `;
-        }).join('');
-
-        row.innerHTML = `
-          <td class="py-3 px-4 text-center font-mono text-xs text-slate-400 font-bold">#${q.id}</td>
-          <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white leading-snug">
-            ${escapeHtml(q.question)}
-          </td>
-          <td class="py-3 px-4 space-y-0.5">
-            ${optionsHtml}
-          </td>
-          <td class="py-3 px-4 text-center">
-            <div class="inline-flex items-center gap-1.5">
-              <button 
-                type="button" 
-                class="edit-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition"
-                title="Tahrirlash"
-              >
-                ✏️
-              </button>
-              <button 
-                type="button" 
-                class="delete-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition"
-                title="O'chirish"
-              >
-                🗑️
-              </button>
-            </div>
-          </td>
-        `;
-
-        row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(q));
-        row.querySelector('.delete-btn').addEventListener('click', () => deleteSingleQuestion(q.id));
-
-        questionsTableBody.appendChild(row);
+      data.questions.forEach((q, idx) => {
+        const orderNum = q.order_number || (((currentPage - 1) * 50) + idx + 1);
+        questionsTableBody.appendChild(buildQuestionRow(q, orderNum));
       });
+      updateRowNumbers();
 
     } catch (err) {
       console.error(err);
@@ -549,6 +606,8 @@
           <td colspan="4" class="text-center py-10 text-rose-500 font-bold">Yuklashda xatolik yuz berdi.</td>
         </tr>
       `;
+    } finally {
+      questionsTableBody.classList.remove('opacity-40', 'pointer-events-none');
     }
   }
 
@@ -587,7 +646,9 @@
   }
 
   function openEditModal(q) {
-    modalTitle.textContent = `Savolni Tahrirlash (#${q.id})`;
+    const row = document.getElementById(`question-row-${q.id}`);
+    const rowNum = row ? (row.querySelector('.row-number')?.textContent || q.order_number || q.id) : (q.order_number || q.id);
+    modalTitle.textContent = `Savolni Tahrirlash (№ ${rowNum})`;
     editQuestionIdInput.value = q.id;
     document.getElementById('form-question').value = q.question;
     document.getElementById('form-option-a').value = q.option_a;
@@ -609,7 +670,7 @@
   closeQuestionModalBtn.addEventListener('click', closeQuestionModal);
   cancelQuestionModalBtn.addEventListener('click', closeQuestionModal);
 
-  // Formani saqlash (POST yoki PUT)
+  // Formani saqlash (POST yoki PUT) - Tezkor In-Place yangilanish bilan
   questionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = editQuestionIdInput.value;
@@ -622,6 +683,19 @@
     const option_d = document.getElementById('form-option-d').value.trim();
     const correctRadio = document.querySelector('input[name="correct_choice"]:checked');
     const correct = correctRadio ? parseInt(correctRadio.value, 10) : 0;
+
+    const saveBtn = document.getElementById('save-question-btn');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `
+      <span class="inline-flex items-center gap-1.5">
+        <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        Saqlanmoqda...
+      </span>
+    `;
 
     const payload = { question, option_a, option_b, option_c, option_d, correct };
 
@@ -638,31 +712,96 @@
       const data = await res.json();
       if (res.ok && data.success) {
         closeQuestionModal();
-        loadQuestions();
+        if (!isEdit && data.question) {
+          // Yangi savol: Jadval oxiriga qo'shish va avtomatik tartib raqam berish
+          const emptyPlaceholder = questionsTableBody.querySelector('td[colspan="4"]');
+          if (emptyPlaceholder) {
+            questionsTableBody.innerHTML = '';
+          }
+          const newRow = buildQuestionRow(data.question);
+          newRow.classList.add('bg-emerald-50', 'dark:bg-emerald-950/40');
+          questionsTableBody.appendChild(newRow);
+          updateRowNumbers();
+          setTimeout(() => {
+            newRow.classList.remove('bg-emerald-50', 'dark:bg-emerald-950/40');
+          }, 1500);
+
+          totalCount++;
+          adminTotalBadge.textContent = `Jami: ${totalCount} ta savol`;
+          showToast("Savol muvaffaqiyatli qo'shildi!");
+        } else if (isEdit && data.question) {
+          // Tahrirlash: Qatorni joyida yangilash
+          const existingRow = document.getElementById(`question-row-${id}`);
+          if (existingRow) {
+            const currentNum = existingRow.querySelector('.row-number')?.textContent;
+            const updatedRow = buildQuestionRow(data.question, currentNum);
+            updatedRow.classList.add('bg-indigo-50', 'dark:bg-indigo-950/40');
+            existingRow.replaceWith(updatedRow);
+            updateRowNumbers();
+            setTimeout(() => {
+              updatedRow.classList.remove('bg-indigo-50', 'dark:bg-indigo-950/40');
+            }, 1500);
+          }
+          showToast("Savol muvaffaqiyatli yangilandi!");
+        }
       } else {
         alert(data.error || "Saqlashda xatolik yuz berdi.");
       }
     } catch (err) {
       alert("Tarmoq xatosi.");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnText;
     }
   });
 
-  // 7. Bitta savolni o'chirish
+  // 7. Bitta savolni o'chirish (Tezkor Optimistic Delete & Avtomatik qayta raqamlash)
   async function deleteSingleQuestion(id) {
-    if (!confirm(`#${id} raqamli savolni o'chirmoqchimisiz?`)) return;
+    const row = document.getElementById(`question-row-${id}`);
+    const rowNum = row ? (row.querySelector('.row-number')?.textContent || id) : id;
+    if (!confirm(`№ ${rowNum}-savolni o'chirmoqchimisiz?`)) return;
+
+    if (row) {
+      // Optimistic delete: darhol ko'zdan yo'qotish (0ms kechikish)
+      row.style.transition = 'all 0.25s ease';
+      row.style.opacity = '0';
+      row.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        row.remove();
+        updateRowNumbers();
+        if (questionsTableBody.children.length === 0) {
+          if (currentPage > 1) {
+            currentPage--;
+            loadQuestions();
+          } else {
+            questionsTableBody.innerHTML = `
+              <tr>
+                <td colspan="4" class="text-center py-12 text-slate-400 font-medium">
+                  Hech qanday savol topilmadi.
+                </td>
+              </tr>
+            `;
+          }
+        }
+      }, 250);
+    }
+
+    totalCount = Math.max(0, totalCount - 1);
+    adminTotalBadge.textContent = `Jami: ${totalCount} ta savol`;
+    showToast(`№ ${rowNum}-savol o'chirildi`);
 
     try {
       const res = await fetch(`/api/admin/questions/${id}/`, {
         method: 'DELETE'
       });
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (!res.ok || !data.success) {
+        showToast(data.error || "O'chirishda xatolik yuz berdi", "error");
         loadQuestions();
-      } else {
-        alert(data.error || "O'chirishda xatolik");
       }
     } catch (err) {
-      alert("Tarmoq xatosi");
+      showToast("Tarmoq xatosi, savol o'chirilmadi", "error");
+      loadQuestions();
     }
   }
 
@@ -722,7 +861,7 @@
       const data = await res.json();
 
       if (res.ok && data.success) {
-        alert(data.message);
+        showToast(data.message || "Savollar muvaffaqiyatli import qilindi!");
         closeImportModal();
         loadQuestions();
       } else {
@@ -766,6 +905,9 @@
       return;
     }
 
+    confirmDeleteAllBtn.disabled = true;
+    confirmDeleteAllBtn.textContent = "O'chirilmoqda...";
+
     try {
       const res = await fetch('/api/admin/questions/all/', {
         method: 'DELETE',
@@ -775,14 +917,25 @@
 
       const data = await res.json();
       if (res.ok && data.success) {
-        alert(data.message);
         closeDeleteAllModal();
-        loadQuestions();
+        totalCount = 0;
+        adminTotalBadge.textContent = 'Jami: 0 ta savol';
+        questionsTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-12 text-slate-400 font-medium">
+              Hech qanday savol topilmadi.
+            </td>
+          </tr>
+        `;
+        showToast(data.message || "Barcha savollar muvaffaqiyatli o'chirildi!");
       } else {
         alert(data.error || "O'chirishda xatolik");
       }
     } catch (err) {
       alert("Tarmoq xatosi");
+    } finally {
+      confirmDeleteAllBtn.disabled = false;
+      confirmDeleteAllBtn.textContent = "Hammasini O'chirish";
     }
   });
 
