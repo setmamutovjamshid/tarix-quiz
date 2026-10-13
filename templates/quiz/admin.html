@@ -1,0 +1,799 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Paneli | Onlayn Test Boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-5xl mx-auto">
+
+  <!-- ==================================================== -->
+  <!-- 1. ADMIN LOGIN EKRANI -->
+  <!-- ==================================================== -->
+  <div id="admin-login-screen" class="max-w-md mx-auto bg-white dark:bg-slate-800/90 rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-200/80 dark:border-slate-700">
+    <div class="text-center mb-8">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+        🔐
+      </div>
+      <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Admin Tizimiga Kirish</h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Savollarni boshqarish uchun maxfiy parolni kiriting</p>
+    </div>
+
+    <!-- Xatolik ogohlantirishi -->
+    <div id="login-error-alert" class="hidden mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs sm:text-sm text-rose-700 dark:text-rose-300 font-semibold flex items-start gap-2.5">
+      <span class="text-base">⚠️</span>
+      <span id="login-error-text">Parol noto'g'ri</span>
+    </div>
+
+    <form id="admin-login-form" class="space-y-5">
+      <div>
+        <label for="admin-password-input" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+          Admin Paroli
+        </label>
+        <div class="relative">
+          <input 
+            type="password" 
+            id="admin-password-input" 
+            required 
+            placeholder="••••••••••••"
+            class="w-full px-4 py-3.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-base focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition"
+          >
+          <button 
+            type="button" 
+            id="toggle-password-btn" 
+            class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-semibold"
+          >
+            Ko'rsatish
+          </button>
+        </div>
+      </div>
+
+      <button 
+        type="submit" 
+        id="login-submit-btn"
+        class="w-full py-4 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-lg shadow-indigo-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+      >
+        <span>Kirish</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 2. ADMIN BOSHQARUV PANELI -->
+  <!-- ==================================================== -->
+  <div id="admin-dashboard-screen" class="hidden space-y-6">
+    
+    <!-- Yuqori sarlavha va Logout -->
+    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="px-2.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 text-xs font-extrabold uppercase tracking-wide">
+            Admin Rejim
+          </span>
+          <span id="admin-total-badge" class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Jami: 0 ta savol
+          </span>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Savollar Boshqaruvi</h1>
+      </div>
+
+      <div class="flex items-center gap-3 w-full sm:w-auto">
+        <a href="/" target="_blank" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+          <span>Testni Ko'rish</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+        <button 
+          id="admin-logout-btn" 
+          type="button" 
+          class="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs sm:text-sm font-bold transition flex items-center gap-1.5"
+        >
+          <span>Chiqish</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Harakatlar paneli: Qidiruv va Tugmalar -->
+    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 dark:border-slate-700 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <!-- Qidiruv -->
+      <div class="relative flex-1">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Savol yoki variantlar bo'yicha qidirish..." 
+          class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+      </div>
+
+      <!-- Amallar tugmalari -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button 
+          id="open-add-modal-btn" 
+          type="button"
+          class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-sm transition flex items-center gap-1.5"
+        >
+          <span>+ Savol Qo'shish</span>
+        </button>
+        <button 
+          id="open-import-modal-btn" 
+          type="button"
+          class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1.5"
+        >
+          <span>📥 Import</span>
+        </button>
+        <button 
+          id="export-questions-btn" 
+          type="button"
+          class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition flex items-center gap-1.5"
+        >
+          <span>📤 Eksport</span>
+        </button>
+        <button 
+          id="open-delete-all-modal-btn" 
+          type="button"
+          class="px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-xs sm:text-sm font-bold transition flex items-center gap-1.5"
+        >
+          <span>🗑️ Tozalash</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Savollar Jadvali -->
+    <div class="bg-white dark:bg-slate-800/90 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-xs uppercase font-extrabold text-slate-500 dark:text-slate-400">
+              <th class="py-3.5 px-4 w-16 text-center">ID</th>
+              <th class="py-3.5 px-4 min-w-[240px]">Savol Matni</th>
+              <th class="py-3.5 px-4 min-w-[280px]">Variantlar (A / B / C / D)</th>
+              <th class="py-3.5 px-4 w-32 text-center">Amallar</th>
+            </tr>
+          </thead>
+          <tbody id="questions-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/60 text-slate-700 dark:text-slate-200">
+            <tr>
+              <td colspan="4" class="text-center py-10 text-slate-400">Savollar yuklanmoqda...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sahifalash (Pagination) -->
+      <div id="pagination-container" class="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="text-slate-500 dark:text-slate-400 font-medium" id="pagination-info">
+          1-50 ko'rsatilmoqda
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="prev-page-btn" class="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            Oldingi
+          </button>
+          <span id="current-page-display" class="font-bold text-slate-800 dark:text-slate-200 px-2">1 / 1</span>
+          <button id="next-page-btn" class="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            Keyingi
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: Savol qo'shish / tahrirlash -->
+  <!-- ==================================================== -->
+  <div id="question-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h2 id="modal-title" class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Yangi Savol Qo'shish</h2>
+        <button type="button" id="close-question-modal-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">✕</button>
+      </div>
+
+      <form id="question-form" class="space-y-4">
+        <input type="hidden" id="edit-question-id" value="">
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">Savol matni</label>
+          <textarea id="form-question" required rows="3" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Savol matnini kiriting..."></textarea>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Variantlar va To'g'ri javob</label>
+
+          <!-- Variant A -->
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correct_choice" id="choice_0" value="0" required class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <label for="choice_0" class="text-xs font-bold text-slate-600 dark:text-slate-400 w-5">A:</label>
+            <input type="text" id="form-option-a" required placeholder="A varianti" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <!-- Variant B -->
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correct_choice" id="choice_1" value="1" required class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <label for="choice_1" class="text-xs font-bold text-slate-600 dark:text-slate-400 w-5">B:</label>
+            <input type="text" id="form-option-b" required placeholder="B varianti" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <!-- Variant C -->
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correct_choice" id="choice_2" value="2" required class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <label for="choice_2" class="text-xs font-bold text-slate-600 dark:text-slate-400 w-5">C:</label>
+            <input type="text" id="form-option-c" required placeholder="C varianti" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <!-- Variant D -->
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correct_choice" id="choice_3" value="3" required class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <label for="choice_3" class="text-xs font-bold text-slate-600 dark:text-slate-400 w-5">D:</label>
+            <input type="text" id="form-option-d" required placeholder="D varianti" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-400 italic">Radio tugmani belgilab, qaysi biri to'g'ri javob ekanligini ko'rsating.</p>
+
+        <div class="pt-4 flex items-center justify-end gap-2.5">
+          <button type="button" id="cancel-question-modal-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            Bekor qilish
+          </button>
+          <button type="submit" id="save-question-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition">
+            Saqlash
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: JSON Import -->
+  <!-- ==================================================== -->
+  <div id="import-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">JSON Orqali Savollar Importi</h2>
+        <button type="button" id="close-import-modal-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+        Mavjud savollarga qo'shiladi. Kutilayotgan format:<br>
+        <code class="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-mono text-[11px] block mt-1">
+          [{"q":"Savol","o":["A","B","C","D"],"a":1}]
+        </code>
+      </p>
+
+      <div class="space-y-4">
+        <!-- Fayl tanlash -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">.json faylni tanlang</label>
+          <input type="file" id="import-file-input" accept=".json" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 dark:file:bg-indigo-950/60 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer">
+        </div>
+
+        <div class="text-center text-xs text-slate-400 font-bold uppercase">— YOKI MATNNI QO'YING —</div>
+
+        <div>
+          <textarea id="import-json-textarea" rows="6" placeholder='[&#10;  {"q": "Savol matni", "o": ["Var 1", "Var 2", "Var 3", "Var 4"], "a": 0}&#10;]' class="w-full font-mono text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <!-- Import xatoliklar paneli -->
+        <div id="import-error-box" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" id="cancel-import-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            Bekor qilish
+          </button>
+          <button type="button" id="submit-import-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition flex items-center gap-1.5">
+            <span>Import Qilish</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: Hammasini O'chirish (Tasdiqlash) -->
+  <!-- ==================================================== -->
+  <div id="delete-all-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-rose-200 dark:border-rose-900/60 text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl mb-4">
+        ⚠️
+      </div>
+      <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Barcha Savollarni O'chirish</h2>
+      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6">
+        Bu amalni ortga qaytarib bo'lmaydi! Tasdiqlash uchun quyidagi maydonga <strong>HA_OCHIRISH</strong> deb yozing:
+      </p>
+
+      <input 
+        type="text" 
+        id="confirm-delete-all-input" 
+        placeholder="HA_OCHIRISH" 
+        class="w-full text-center tracking-widest font-bold px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white mb-6 uppercase outline-none focus:ring-2 focus:ring-rose-500"
+      >
+
+      <div class="flex items-center justify-center gap-3">
+        <button type="button" id="cancel-delete-all-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+          Bekor qilish
+        </button>
+        <button type="button" id="confirm-delete-all-btn" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm transition">
+          Hammasini O'chirish
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // DOM elementlari
+  const loginScreen = document.getElementById('admin-login-screen');
+  const dashboardScreen = document.getElementById('admin-dashboard-screen');
+  const loginForm = document.getElementById('admin-login-form');
+  const passwordInput = document.getElementById('admin-password-input');
+  const togglePassBtn = document.getElementById('toggle-password-btn');
+  const loginErrorAlert = document.getElementById('login-error-alert');
+  const loginErrorText = document.getElementById('login-error-text');
+  const logoutBtn = document.getElementById('admin-logout-btn');
+
+  const adminTotalBadge = document.getElementById('admin-total-badge');
+  const searchInput = document.getElementById('search-input');
+  const questionsTableBody = document.getElementById('questions-table-body');
+  const paginationInfo = document.getElementById('pagination-info');
+  const prevPageBtn = document.getElementById('prev-page-btn');
+  const nextPageBtn = document.getElementById('next-page-btn');
+  const currentPageDisplay = document.getElementById('current-page-display');
+
+  // Modal elementlari
+  const questionModal = document.getElementById('question-modal');
+  const openAddModalBtn = document.getElementById('open-add-modal-btn');
+  const closeQuestionModalBtn = document.getElementById('close-question-modal-btn');
+  const cancelQuestionModalBtn = document.getElementById('cancel-question-modal-btn');
+  const questionForm = document.getElementById('question-form');
+  const modalTitle = document.getElementById('modal-title');
+  const editQuestionIdInput = document.getElementById('edit-question-id');
+
+  const importModal = document.getElementById('import-modal');
+  const openImportModalBtn = document.getElementById('open-import-modal-btn');
+  const closeImportModalBtn = document.getElementById('close-import-modal-btn');
+  const cancelImportBtn = document.getElementById('cancel-import-btn');
+  const importFileInput = document.getElementById('import-file-input');
+  const importJsonTextarea = document.getElementById('import-json-textarea');
+  const submitImportBtn = document.getElementById('submit-import-btn');
+  const importErrorBox = document.getElementById('import-error-box');
+
+  const exportBtn = document.getElementById('export-questions-btn');
+
+  const deleteAllModal = document.getElementById('delete-all-modal');
+  const openDeleteAllModalBtn = document.getElementById('open-delete-all-modal-btn');
+  const cancelDeleteAllBtn = document.getElementById('cancel-delete-all-btn');
+  const confirmDeleteAllBtn = document.getElementById('confirm-delete-all-btn');
+  const confirmDeleteAllInput = document.getElementById('confirm-delete-all-input');
+
+  // Holat
+  let currentPage = 1;
+  let totalPages = 1;
+  let searchQuery = '';
+  let searchTimeout = null;
+
+  const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+  // Parolni ko'rsatish/yashirish
+  togglePassBtn.addEventListener('click', () => {
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      togglePassBtn.textContent = 'Yashirish';
+    } else {
+      passwordInput.type = 'password';
+      togglePassBtn.textContent = "Ko'rsatish";
+    }
+  });
+
+  // 1. Sessiya holatini tekshirish
+  async function checkAuth() {
+    try {
+      const res = await fetch('/api/admin/me/');
+      const data = await res.json();
+      if (data.authenticated) {
+        showDashboard();
+      } else {
+        showLogin();
+      }
+    } catch (err) {
+      showLogin();
+    }
+  }
+
+  function showLogin() {
+    loginScreen.classList.remove('hidden');
+    dashboardScreen.classList.add('hidden');
+  }
+
+  function showDashboard() {
+    loginScreen.classList.add('hidden');
+    dashboardScreen.classList.remove('hidden');
+    loadQuestions();
+  }
+
+  // 2. Login qilish
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = passwordInput.value;
+    loginErrorAlert.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/admin/login/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        passwordInput.value = '';
+        showDashboard();
+      } else {
+        loginErrorAlert.classList.remove('hidden');
+        loginErrorText.textContent = data.error || "Kirishda xatolik yuz berdi.";
+      }
+    } catch (err) {
+      loginErrorAlert.classList.remove('hidden');
+      loginErrorText.textContent = "Tarmoq xatosi. Qaytadan urinib ko'ring.";
+    }
+  });
+
+  // 3. Chiqish (Logout)
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await fetch('/api/admin/logout/', { method: 'POST' });
+    } catch (e) {}
+    showLogin();
+  });
+
+  // 4. Savollarni yuklash (50 tadan sahifalash)
+  async function loadQuestions() {
+    questionsTableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center py-10 text-slate-400">Yuklanmoqda...</td>
+      </tr>
+    `;
+
+    try {
+      const url = `/api/admin/questions/?page=${currentPage}&limit=50&search=${encodeURIComponent(searchQuery)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.success) {
+        if (res.status === 401) {
+          showLogin();
+          return;
+        }
+        alert(data.error || "Savollarni yuklashda xatolik");
+        return;
+      }
+
+      adminTotalBadge.textContent = `Jami: ${data.total} ta savol`;
+      totalPages = data.totalPages || 1;
+      currentPage = data.page || 1;
+      currentPageDisplay.textContent = `${currentPage} / ${totalPages}`;
+      paginationInfo.textContent = `Jami ${data.total} ta savol (${totalPages} ta sahifa)`;
+
+      prevPageBtn.disabled = !data.hasPrev;
+      nextPageBtn.disabled = !data.hasNext;
+
+      if (!data.questions || data.questions.length === 0) {
+        questionsTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-12 text-slate-400 font-medium">
+              Hech qanday savol topilmadi.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      questionsTableBody.innerHTML = '';
+      data.questions.forEach(q => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors";
+
+        // Variantlar ro'yxati (to'g'ri variant yashil)
+        const optionsHtml = q.options.map((opt, idx) => {
+          const isCorrect = (idx === q.correct);
+          return `
+            <div class="text-xs flex items-start gap-1.5 ${isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}">
+              <span class="font-bold">${OPTION_LETTERS[idx]}:</span>
+              <span>${escapeHtml(opt)}</span>
+              ${isCorrect ? '<span class="text-emerald-500 font-extrabold">✓</span>' : ''}
+            </div>
+          `;
+        }).join('');
+
+        row.innerHTML = `
+          <td class="py-3 px-4 text-center font-mono text-xs text-slate-400 font-bold">#${q.id}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white leading-snug">
+            ${escapeHtml(q.question)}
+          </td>
+          <td class="py-3 px-4 space-y-0.5">
+            ${optionsHtml}
+          </td>
+          <td class="py-3 px-4 text-center">
+            <div class="inline-flex items-center gap-1.5">
+              <button 
+                type="button" 
+                class="edit-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition"
+                title="Tahrirlash"
+              >
+                ✏️
+              </button>
+              <button 
+                type="button" 
+                class="delete-btn p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition"
+                title="O'chirish"
+              >
+                🗑️
+              </button>
+            </div>
+          </td>
+        `;
+
+        row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(q));
+        row.querySelector('.delete-btn').addEventListener('click', () => deleteSingleQuestion(q.id));
+
+        questionsTableBody.appendChild(row);
+      });
+
+    } catch (err) {
+      console.error(err);
+      questionsTableBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-10 text-rose-500 font-bold">Yuklashda xatolik yuz berdi.</td>
+        </tr>
+      `;
+    }
+  }
+
+  // 5. Qidiruv debounce
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchQuery = e.target.value.trim();
+      currentPage = 1;
+      loadQuestions();
+    }, 350);
+  });
+
+  // Sahifalash tugmalari
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      loadQuestions();
+    }
+  });
+
+  nextPageBtn.addEventListener('click', () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      loadQuestions();
+    }
+  });
+
+  // 6. Savol qo'shish / tahrirlash modali
+  function openAddModal() {
+    modalTitle.textContent = "Yangi Savol Qo'shish";
+    editQuestionIdInput.value = '';
+    questionForm.reset();
+    document.getElementById('choice_0').checked = true;
+    questionModal.classList.remove('hidden');
+  }
+
+  function openEditModal(q) {
+    modalTitle.textContent = `Savolni Tahrirlash (#${q.id})`;
+    editQuestionIdInput.value = q.id;
+    document.getElementById('form-question').value = q.question;
+    document.getElementById('form-option-a').value = q.option_a;
+    document.getElementById('form-option-b').value = q.option_b;
+    document.getElementById('form-option-c').value = q.option_c;
+    document.getElementById('form-option-d').value = q.option_d;
+
+    const radio = document.querySelector(`input[name="correct_choice"][value="${q.correct}"]`);
+    if (radio) radio.checked = true;
+
+    questionModal.classList.remove('hidden');
+  }
+
+  function closeQuestionModal() {
+    questionModal.classList.add('hidden');
+  }
+
+  openAddModalBtn.addEventListener('click', openAddModal);
+  closeQuestionModalBtn.addEventListener('click', closeQuestionModal);
+  cancelQuestionModalBtn.addEventListener('click', closeQuestionModal);
+
+  // Formani saqlash (POST yoki PUT)
+  questionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = editQuestionIdInput.value;
+    const isEdit = Boolean(id);
+
+    const question = document.getElementById('form-question').value.trim();
+    const option_a = document.getElementById('form-option-a').value.trim();
+    const option_b = document.getElementById('form-option-b').value.trim();
+    const option_c = document.getElementById('form-option-c').value.trim();
+    const option_d = document.getElementById('form-option-d').value.trim();
+    const correctRadio = document.querySelector('input[name="correct_choice"]:checked');
+    const correct = correctRadio ? parseInt(correctRadio.value, 10) : 0;
+
+    const payload = { question, option_a, option_b, option_c, option_d, correct };
+
+    try {
+      const url = isEdit ? `/api/admin/questions/${id}/` : '/api/admin/questions/create/';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        closeQuestionModal();
+        loadQuestions();
+      } else {
+        alert(data.error || "Saqlashda xatolik yuz berdi.");
+      }
+    } catch (err) {
+      alert("Tarmoq xatosi.");
+    }
+  });
+
+  // 7. Bitta savolni o'chirish
+  async function deleteSingleQuestion(id) {
+    if (!confirm(`#${id} raqamli savolni o'chirmoqchimisiz?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/questions/${id}/`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        loadQuestions();
+      } else {
+        alert(data.error || "O'chirishda xatolik");
+      }
+    } catch (err) {
+      alert("Tarmoq xatosi");
+    }
+  }
+
+  // 8. JSON Import
+  openImportModalBtn.addEventListener('click', () => {
+    importErrorBox.classList.add('hidden');
+    importJsonTextarea.value = '';
+    importFileInput.value = '';
+    importModal.classList.remove('hidden');
+  });
+
+  function closeImportModal() {
+    importModal.classList.add('hidden');
+  }
+
+  closeImportModalBtn.addEventListener('click', closeImportModal);
+  cancelImportBtn.addEventListener('click', closeImportModal);
+
+  // Fayl tanlanganda o'qish
+  importFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      importJsonTextarea.value = evt.target.result;
+    };
+    reader.readAsText(file);
+  });
+
+  submitImportBtn.addEventListener('click', async () => {
+    importErrorBox.classList.add('hidden');
+    const content = importJsonTextarea.value.trim();
+    if (!content) {
+      importErrorBox.textContent = "Iltimos, JSON matnini kiriting yoki fayl tanlang.";
+      importErrorBox.classList.remove('hidden');
+      return;
+    }
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(content);
+    } catch (err) {
+      importErrorBox.textContent = "JSON formati noto'g'ri: " + err.message;
+      importErrorBox.classList.remove('hidden');
+      return;
+    }
+
+    submitImportBtn.disabled = true;
+    submitImportBtn.textContent = "Yuklanmoqda...";
+
+    try {
+      const res = await fetch('/api/admin/questions/import/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsedData)
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(data.message);
+        closeImportModal();
+        loadQuestions();
+      } else {
+        importErrorBox.innerHTML = `<strong>${escapeHtml(data.error || "Import xatosi")}</strong>`;
+        if (data.details) {
+          importErrorBox.innerHTML += `<ul class="list-disc pl-4 mt-2 space-y-1">` + 
+            data.details.map(d => `<li>${escapeHtml(d)}</li>`).join('') + `</ul>`;
+        }
+        importErrorBox.classList.remove('hidden');
+      }
+    } catch (err) {
+      importErrorBox.textContent = "Tarmoq xatosi yuz berdi.";
+      importErrorBox.classList.remove('hidden');
+    } finally {
+      submitImportBtn.disabled = false;
+      submitImportBtn.textContent = "Import Qilish";
+    }
+  });
+
+  // 9. JSON Eksport
+  exportBtn.addEventListener('click', () => {
+    window.location.href = '/api/admin/questions/export/';
+  });
+
+  // 10. Barcha savollarni o'chirish (Tasdiqlash bilan)
+  openDeleteAllModalBtn.addEventListener('click', () => {
+    confirmDeleteAllInput.value = '';
+    deleteAllModal.classList.remove('hidden');
+  });
+
+  function closeDeleteAllModal() {
+    deleteAllModal.classList.add('hidden');
+  }
+
+  cancelDeleteAllBtn.addEventListener('click', closeDeleteAllModal);
+
+  confirmDeleteAllBtn.addEventListener('click', async () => {
+    const confirmText = confirmDeleteAllInput.value.trim();
+    if (confirmText !== 'HA_OCHIRISH') {
+      alert("Tasdiqlash uchun aniq HA_OCHIRISH deb yozishingiz kerak.");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/questions/all/', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: confirmText })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(data.message);
+        closeDeleteAllModal();
+        loadQuestions();
+      } else {
+        alert(data.error || "O'chirishda xatolik");
+      }
+    } catch (err) {
+      alert("Tarmoq xatosi");
+    }
+  });
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Sahifa ochilganda tekshirish
+  checkAuth();
+</script>
+{% endblock %}
