@@ -17,6 +17,11 @@ staticfiles/
 
 # Environment
 .env
+.env.local
+.env*.local
+
+# Vercel
+.vercel
 
 # IDE
 .idea/

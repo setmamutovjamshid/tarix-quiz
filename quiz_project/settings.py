@@ -29,6 +29,17 @@ if raw_hosts == '*':
 else:
     ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(',') if h.strip()]
 
+# Vercel proxy orqali HTTPS
+if os.environ.get('VERCEL') == '1':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# CSRF ishonchli manbalar (Vercel / production)
+raw_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '').strip()
+if raw_csrf:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(',') if o.strip()]
+elif os.environ.get('VERCEL') == '1':
+    CSRF_TRUSTED_ORIGINS = ['https://*.vercel.app']
+
 # Ilovalar ro'yxati
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -76,12 +87,16 @@ WSGI_APPLICATION = 'quiz_project.wsgi.application'
 # Ma'lumotlar bazasi (Neon Postgres yoki lokal SQLite)
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
+# Vercel serverless'da ulanishlarni saqlamaslik kerak
+_is_serverless = os.environ.get('VERCEL') == '1'
+_conn_max_age = 0 if _is_serverless else 600
+
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
+            conn_max_age=_conn_max_age,
+            conn_health_checks=not _is_serverless,
         )
     }
     DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True

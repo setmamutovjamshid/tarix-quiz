@@ -44,7 +44,7 @@ Django 5 / 6, Neon (Serverless PostgreSQL) va zamonaviy Tailwind CSS asosida yar
 - **Ma'lumotlar bazasi**: Neon (Serverless Postgres) + `psycopg 3` + `dj-database-url`
 - **Frontend**: Django Templates + Tailwind CSS (Responsive, Mobile-First) + Vanilla JS (Fetch API)
 - **Xavfsizlik**: PyJWT, Rate-Limiting, httpOnly Cookies, Parameterized SQL
-- **Deploy**: Render (`build.sh`, `Procfile`, `render.yaml`, `gunicorn`, `whitenoise`)
+- **Deploy**: Vercel (Django Python Runtime) + Render (`build.sh`, `Procfile`, `render.yaml`)
 
 ---
 
@@ -160,31 +160,42 @@ python manage.py test quiz
 
 ---
 
-## ☁️ 6. Render Platformasiga Deploy Qilish
+## ☁️ 6. Vercel Platformasiga Deploy Qilish
 
-Loyihada Render uchun maxsus `render.yaml`, `build.sh` va `Procfile` tayyorlangan.
+Loyihada `vercel.json` va `.python-version` tayyorlangan. Vercel Django'ni avtomatik aniqlaydi (`manage.py` + WSGI).
 
-### Render'da o'rnatish bosqichlari:
+### Vercel'da o'rnatish bosqichlari:
 
-1. Ushbu loyihani o'zingizning GitHub akkauntingizga yuklang (`git push`).
-2. [Render Dashboard](https://dashboard.render.com/) ga kiring.
-3. **"New +"** tugmasini bosing va **"Web Service"** ni tanlang.
-4. GitHub repozitoriyangizni ulang.
-5. Quyidagi parametrlarni tekshiring yoki kiriting:
-   - **Name**: `uzbek-quiz-app`
-   - **Environment**: `Python 3`
-   - **Branch**: `main`
-   - **Build Command**: `./build.sh`
-   - **Start Command**: `gunicorn quiz_project.wsgi:application`
-6. **Environment Variables** (Muhit o'zgaruvchilari) bo'limida quyidagilarni kiriting:
-   - `DATABASE_URL`: Neon postgresql connection string
-   - `ADMIN_PASSWORD`: Siz tanlagan admin paroli
-   - `SESSION_SECRET`: Kamida 32 ta belgidan iborat tasodifiy matn
-   - `SECRET_KEY`: Django maxfiy kaliti
-   - `DEBUG`: `False`
-   - `ALLOWED_HOSTS`: `.onrender.com`
-   - `PYTHON_VERSION`: `3.12.0` (yoki `3.13.0`)
-7. **"Create Web Service"** tugmasini bosing. Render avtomatik ravishda `build.sh` orqali kutubxonalarni o'rnatadi, migratsiyalarni bajaradi, statik fayllarni yig'adi va `gunicorn` orqali ishga tushiradi!
+1. Ushbu loyihani GitHub'ga push qiling.
+2. [Vercel Dashboard](https://vercel.com/dashboard) ga kiring → **Add New…** → **Project**.
+3. GitHub repozitoriyangizni tanlang (`tariz-quiz`) va **Import** bosing.
+4. Framework Preset: **Django** (yoki Other) — Vercel o'zi aniqlashi mumkin.
+5. **Environment Variables** bo'limiga quyidagilarni qo'shing (Production + Preview):
+
+| Key | Value (misol) |
+|-----|----------------|
+| `DATABASE_URL` | Neon `postgresql://...pooler...?sslmode=require` |
+| `ADMIN_PASSWORD` | O'zingiz tanlagan kuchli parol |
+| `SESSION_SECRET` | Kamida 32 belgilik tasodifiy matn |
+| `SECRET_KEY` | Django maxfiy kaliti (tasodifiy uzundan) |
+| `DEBUG` | `False` |
+| `ALLOWED_HOSTS` | `.vercel.app,localhost,127.0.0.1` |
+| `CSRF_TRUSTED_ORIGINS` | `https://*.vercel.app` |
+
+6. Custom domain ulangandan keyin `ALLOWED_HOSTS` va `CSRF_TRUSTED_ORIGINS` ga domeningizni ham qo'shing.
+7. **Deploy** bosing. Build paytida migratsiya (`vercel.json`) va `collectstatic` avtomatik ishlaydi.
+
+> Neon'dan **pooled** (pooler) connection string oling — serverless uchun mos.
+
+---
+
+## ☁️ 6b. Render Platformasiga Deploy Qilish (ixtiyoriy)
+
+Loyihada Render uchun `render.yaml`, `build.sh` va `Procfile` ham bor.
+
+1. GitHub'ga push qiling → [Render](https://dashboard.render.com/) → **New +** → **Web Service**.
+2. Build: `./build.sh` · Start: `gunicorn quiz_project.wsgi:application`
+3. Env: `DATABASE_URL`, `ADMIN_PASSWORD`, `SESSION_SECRET`, `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=.onrender.com`, `PYTHON_VERSION=3.12.0`
 
 ---
 
